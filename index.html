@@ -428,14 +428,28 @@
         function calculatePoints(s) { return (s.won * 3) + (s.drawn * 1); }
         function calculateGD(s) { return s.gf - s.ga; }
 
+        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ВЫБРАННОЙ ЛИГИ ===
+        function loadSelectedLeague() {
+            const savedLeague = localStorage.getItem('gkx_selectedLeague');
+            if (savedLeague && leagues.find(l => l.id == savedLeague)) {
+                selectedLeague = savedLeague;
+            } else if (leagues.length > 0) {
+                selectedLeague = leagues[0].id;
+            }
+        }
+
         function init() { 
+            // Сначала загружаем лиги и выбранную лигу
+            loadSelectedLeague();
+            renderLeagues();
+            renderAdminLeagues();
+            
+            // Затем всё остальное
             renderAll(); 
             updateUserPanel(); 
             updateAdminNavLink(); 
             renderAdminSocials(); 
             renderSocialsPage(); 
-            renderLeagues(); 
-            renderAdminLeagues(); 
             renderStandings(); 
             renderAdminStandings();
             populateLeagueSelects();
@@ -478,7 +492,7 @@
         function checkAdminAccess() { if (!currentUser) { alert('Войдите в аккаунт!'); openModal('login'); return; } const u = users.find(x=>x.id===currentUser.id); if (!u?.isAdmin) { alert('Только для админов!'); return; } showSection('admin'); }
         function updateAdminNavLink() { const l=document.getElementById('admin-nav-link'),lm=document.getElementById('admin-nav-link-mobile'); if(currentUser){const u=users.find(x=>x.id===currentUser.id);if(u?.isAdmin){l.classList.remove('hidden');lm?.classList.remove('hidden');}else{l.classList.add('hidden');lm?.classList.add('hidden');}}else{l.classList.add('hidden');lm?.classList.add('hidden');} }
 
-        // === ЛИГИ ===
+        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ renderLeagues() ===
         function renderLeagues() {
             const container = document.getElementById('league-filters');
             if (!leagues.length) {
@@ -486,20 +500,27 @@
                 return;
             }
             
-            if (!selectedLeague) {
+            // Если лига не выбрана или выбранной лиги больше не существует, выбираем первую
+            if (!selectedLeague || !leagues.find(l => l.id == selectedLeague)) {
                 selectedLeague = leagues[0].id;
             }
             
             let html = '';
             leagues.forEach(l => {
-                const isActive = selectedLeague === l.id;
+                const isActive = selectedLeague == l.id;
                 html += `<button onclick="filterByLeague(${l.id})" class="league-filter-btn px-4 py-2 rounded-lg text-sm ${isActive?'active':'text-gray-300 bg-gray-800'}">${l.name}</button>`;
             });
             container.innerHTML = html;
+            
+            // Обновляем заголовок таблицы сразу после рендера лиг
+            renderStandings();
         }
 
+        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ filterByLeague() ===
         function filterByLeague(leagueId) {
             selectedLeague = leagueId;
+            // Сохраняем выбранную лигу в localStorage
+            localStorage.setItem('gkx_selectedLeague', leagueId);
             renderLeagues();
             renderAllMatches();
             renderStandings();
@@ -539,20 +560,29 @@
             });
         }
 
-        // === ТУРНИРНАЯ ТАБЛИЦА ===
+        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ renderStandings() ===
         function renderStandings() {
             const tbody = document.getElementById('standings-body');
             const leagueName = document.getElementById('standings-league-name');
             
-            let filteredStandings = standings.filter(s => s.leagueId === selectedLeague);
-            const league = leagues.find(l => l.id === selectedLeague);
-            leagueName.textContent = league ? `Турнирная таблица: ${league.name} (${league.country || ''})` : 'Турнирная таблица';
+            // Если лиги не выбраны, показываем сообщение
+            if (!leagues.length) {
+                leagueName.textContent = 'Нет доступных лиг';
+                tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-500"><div class="text-4xl mb-2">📊</div>Администратор ещё не добавил лиги. Создайте лигу в админ-панели.</td></tr>`;
+                return;
+            }
+            
+            // Фильтруем команды по выбранной лиге
+            let filteredStandings = standings.filter(s => s.leagueId == selectedLeague);
+            const league = leagues.find(l => l.id == selectedLeague);
+            leagueName.textContent = league ? `Турнирная таблица: ${league.name} ${league.country ? '(' + league.country + ')' : ''}` : 'Турнирная таблица';
 
             if (!filteredStandings.length) {
                 tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-500"><div class="text-4xl mb-2">📊</div>В этой лиге пока нет команд. Администратор ещё не добавил команды в таблицу.</td></tr>`;
                 return;
             }
             
+            // Сортировка: Очки → Разница мячей → Забитые мячи
             const sorted = [...filteredStandings].sort((a, b) => {
                 const pointsA = calculatePoints(a), pointsB = calculatePoints(b);
                 if (pointsB !== pointsA) return pointsB - pointsA;
@@ -587,6 +617,7 @@
             }).join('');
         }
 
+        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ renderAdminStandings() ===
         function renderAdminStandings() {
             const tbody = document.getElementById('admin-standings-body');
             if (!standings.length) {
@@ -597,7 +628,7 @@
             const sorted = [...standings].sort((a, b) => calculatePoints(b) - calculatePoints(a));
 
             tbody.innerHTML = sorted.map((s, index) => {
-                const league = leagues.find(l => l.id === s.leagueId);
+                const league = leagues.find(l => l.id == s.leagueId);
                 return `
                 <tr class="admin-row border-b border-gray-800">
                     <td class="p-4 font-bold text-gkx-green">${index + 1}</td>
@@ -633,13 +664,13 @@
         function renderHomeMatches(){const l=document.getElementById('home-matches-list');if(!matches.length){l.innerHTML=`<div class="text-center py-12"><div class="text-6xl mb-4">⚽</div><h3 class="text-xl font-bold text-gray-400 mb-2">Нет матчей</h3><p class="text-gray-500">Админ ещё не добавил</p></div>`;return;}l.innerHTML=matches.slice(0,5).map(m=>createMatchCard(m,false)).join('');}
         function renderAllMatches(){
             const g=document.getElementById('all-matches-grid');
-            let f = selectedLeague ? matches.filter(m=>m.leagueId === selectedLeague) : matches;
+            let f = selectedLeague ? matches.filter(m=>m.leagueId == selectedLeague) : matches;
             if (selectedDate) f = f.filter(m=>m.date?.split('T')[0]===selectedDate);
             if(!f.length){g.innerHTML=`<div class="text-center py-12"><div class="text-6xl mb-4">📅</div><h3 class="text-xl font-bold text-gray-400 mb-2">${matches.length?'Нет на эту дату/в этой лиге':'Нет матчей'}</h3><p class="text-gray-500">${matches.length?'Выберите другую дату или лигу':'Админ ещё не добавил'}</p></div>`;return;}
             g.innerHTML=f.map(m=>createMatchCard(m,true)).join('');
         }
         function createMatchCard(m,clickable){
-            const league = leagues.find(l => l.id === m.leagueId);
+            const league = leagues.find(l => l.id == m.leagueId);
             const date=m.date?new Date(m.date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'',sc=m.status==='Live'?'text-red-500 animate-pulse':m.status==='Finished'?'text-gray-400':'text-gkx-green';
             return`<div ${clickable?`onclick="openMatchModal(${m.id})"`:''} class="${getLeagueClass(league?.name||m.league||'')} p-4 rounded-lg border border-gray-800 ${clickable?'cursor-pointer hover:scale-[1.02]':''} transition shadow-lg"><div class="flex justify-between items-center text-xs text-gray-400 mb-2"><span class="font-bold">${league?.name||m.league||'Лига'}</span><span>${date}</span></div><div class="flex justify-between items-center"><div class="flex-1 text-right font-bold text-lg">${m.home}</div><div class="px-6 font-black text-2xl ${sc}">${m.score||'-'}</div><div class="flex-1 text-left font-bold text-lg">${m.away}</div></div><div class="text-center mt-2 text-xs ${sc} font-bold">${m.status==='Live'?'● LIVE':m.status==='Finished'?'FT':'Запланирован'}</div></div>`;
         }
@@ -663,7 +694,7 @@
             `).join('');
         }
 
-        function renderAdminMatches(){const tb=document.getElementById('admin-matches-body');document.getElementById('matches-count').textContent=matches.length;if(!matches.length){tb.innerHTML=`<tr><td colspan="6" class="p-8 text-center text-gray-500"><div class="text-4xl mb-2">⚽</div>Добавьте первый матч!</td></tr>`;return;}tb.innerHTML=matches.map(m=>{const league = leagues.find(l => l.id === m.leagueId); const date=m.date?new Date(m.date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';return`<tr class="admin-row border-b border-gray-800"><td class="p-4 text-gray-400 text-sm">${date}</td><td class="p-4 font-bold text-gkx-green">${league?.name||m.league||'Лига'}</td><td class="p-4 text-center"><span class="text-white">${m.home}</span><span class="text-gray-500 mx-2">vs</span><span class="text-white">${m.away}</span></td><td class="p-4 text-center font-bold text-lg">${m.score||'-'}</td><td class="p-4 text-center"><span class="px-2 py-1 rounded text-xs font-bold ${getStatusColor(m.status)}">${m.status}</span></td><td class="p-4 text-right"><button onclick="openEditMatchModal(${m.id})" class="text-gkx-green hover:text-white text-sm mr-3">✏️</button><button onclick="confirmDelete('match',${m.id})" class="text-red-500 hover:text-red-400 text-sm">🗑️</button></td></tr>`;}).join('');}
+        function renderAdminMatches(){const tb=document.getElementById('admin-matches-body');document.getElementById('matches-count').textContent=matches.length;if(!matches.length){tb.innerHTML=`<tr><td colspan="6" class="p-8 text-center text-gray-500"><div class="text-4xl mb-2">⚽</div>Добавьте первый матч!</td></tr>`;return;}tb.innerHTML=matches.map(m=>{const league = leagues.find(l => l.id == m.leagueId); const date=m.date?new Date(m.date).toLocaleString('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';return`<tr class="admin-row border-b border-gray-800"><td class="p-4 text-gray-400 text-sm">${date}</td><td class="p-4 font-bold text-gkx-green">${league?.name||m.league||'Лига'}</td><td class="p-4 text-center"><span class="text-white">${m.home}</span><span class="text-gray-500 mx-2">vs</span><span class="text-white">${m.away}</span></td><td class="p-4 text-center font-bold text-lg">${m.score||'-'}</td><td class="p-4 text-center"><span class="px-2 py-1 rounded text-xs font-bold ${getStatusColor(m.status)}">${m.status}</span></td><td class="p-4 text-right"><button onclick="openEditMatchModal(${m.id})" class="text-gkx-green hover:text-white text-sm mr-3">✏️</button><button onclick="confirmDelete('match',${m.id})" class="text-red-500 hover:text-red-400 text-sm">🗑️</button></td></tr>`;}).join('');}
         function getStatusColor(s){return s==='Live'?'bg-red-500/20 text-red-500':s==='Finished'?'bg-gray-700 text-gray-300':'bg-gkx-green/20 text-gkx-green';}
 
         function renderAdminNews(){const l=document.getElementById('admin-news-list');document.getElementById('news-count').textContent=news.length;if(!news.length){l.innerHTML=`<div class="text-center py-12"><div class="text-4xl mb-2">📰</div><p class="text-gray-500">Добавьте первую новость!</p></div>`;return;}l.innerHTML=news.map(n=>`<div class="flex items-center gap-4 bg-gray-900/50 p-4 rounded-lg admin-row"><img src="${n.image}" class="w-20 h-20 object-cover rounded" alt="${n.title}"><div class="flex-1"><h4 class="font-bold text-white mb-1">${n.title}</h4><p class="text-gray-400 text-sm line-clamp-1">${n.content}</p><div class="text-xs text-gray-500 mt-1">${n.date} • ${n.comments?.length||0} комментариев</div></div><div class="flex gap-3"><button onclick="openEditNewsModal(${n.id})" class="text-gkx-green hover:text-white text-xl">✏️</button><button onclick="confirmDelete('news',${n.id})" class="text-red-500 hover:text-red-400 text-xl">🗑️</button></div></div>`).join('');}
@@ -696,7 +727,7 @@
 
         function switchMatchTab(tab){document.querySelectorAll('.match-tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.match-tab-content').forEach(c=>c.classList.remove('active'));event.target.classList.add('active');document.getElementById('tab-'+tab).classList.add('active');}
 
-        function openMatchModal(id){const m=matches.find(x=>x.id===id);if(!m)return;const league = leagues.find(l => l.id === m.leagueId); const date=m.date?new Date(m.date).toLocaleString('ru-RU',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';const c=document.getElementById('match-full-content');c.innerHTML=`<div class="text-center mb-8"><div class="text-gkx-green font-bold mb-2">${league?.name||m.league||'Лига'}</div><div class="text-2xl md:text-4xl font-black mb-2">${m.home} ${m.score||'-'} ${m.away}</div><div class="text-gray-400">${date}</div><div class="inline-block mt-2 px-4 py-1 rounded ${m.status==='Live'?'bg-red-500/20 text-red-500':'bg-gray-800 text-gray-400'}">${m.status}</div></div><div class="flex gap-2 border-b border-gray-800 mb-6 overflow-x-auto pb-1"><button class="match-tab-btn active" onclick="switchMatchTab('stats')">📊 Статистика</button><button class="match-tab-btn" onclick="switchMatchTab('info')">ℹ️ Информация</button><button class="match-tab-btn" onclick="switchMatchTab('events')">📋 События</button><button class="match-tab-btn" onclick="switchMatchTab('predictions')">🔮 Прогнозы</button></div><div id="tab-stats" class="match-tab-content active">${m.homePossession!=null?`<div class="bg-gray-900/50 rounded-xl p-6 mb-8"><h3 class="text-xl font-bold mb-4 text-center">Статистика</h3><div class="space-y-4"><div><div class="flex justify-between text-sm mb-1"><span class="font-bold">${m.homePossession}%</span><span class="text-gray-400">Владение</span><span class="font-bold">${m.awayPossession}%</span></div><div class="flex h-2 rounded-full overflow-hidden bg-gray-800"><div class="bg-gkx-green" style="width:${m.homePossession}%"></div><div class="bg-gray-600" style="width:${m.awayPossession}%"></div></div></div><div class="grid grid-cols-3 gap-4 text-center text-sm"><div><div class="text-gray-400 mb-1">Удары</div><div class="font-bold text-lg">${m.homeShots||0} - ${m.awayShots||0}</div></div><div><div class="text-gray-400 mb-1">Угловые</div><div class="font-bold text-lg">${m.homeCorners||0} - ${m.awayCorners||0}</div></div></div></div></div>`:''}<div class="grid md:grid-cols-2 gap-6 mb-8"><div class="bg-gray-900/50 rounded-xl p-6"><h3 class="text-lg font-bold mb-4 text-gkx-green text-center">${m.home}</h3><div class="space-y-2 text-sm">${(m.homeLineup||'Состав не указан').split(',').map(p=>`<div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-gkx-green/20 text-gkx-green flex items-center justify-center text-xs font-bold">11</span><span>${p.trim()}</span></div>`).join('')}</div></div><div class="bg-gray-900/50 rounded-xl p-6"><h3 class="text-lg font-bold mb-4 text-gkx-green text-center">${m.away}</h3><div class="space-y-2 text-sm">${(m.awayLineup||'Состав не указан').split(',').map(p=>`<div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-gkx-green/20 text-gkx-green flex items-center justify-center text-xs font-bold">11</span><span>${p.trim()}</span></div>`).join('')}</div></div></div></div><div id="tab-info" class="match-tab-content"><div class="space-y-4"><div class="match-info-card"><div class="match-info-label">🏟️ Стадион</div><div class="match-info-value"><span class="match-info-icon">📍</span>${m.stadium||'Не указан'}</div>${m.city?`<div class="match-info-value mt-2"><span class="match-info-icon">🏙️</span>${m.city}</div>`:''}</div><div class="grid grid-cols-2 gap-4"><div class="coach-card"><div class="coach-icon">👔</div><div class="coach-name">${m.homeCoach||'Не указан'}</div><div class="coach-team">${m.home}</div></div><div class="coach-card"><div class="coach-icon">👔</div><div class="coach-name">${m.awayCoach||'Не указан'}</div><div class="coach-team">${m.away}</div></div></div></div></div><div id="tab-events" class="match-tab-content"><div class="bg-gray-900/50 rounded-xl p-6">${renderEvents(m.events,m.home,m.away)}</div></div><div id="tab-predictions" class="match-tab-content"><div class="coming-soon"><div class="coming-soon-icon">🚧</div><div class="coming-soon-text">В РАЗРАБОТКЕ</div><div class="coming-soon-sub">Прогнозы на матчи скоро появятся!</div></div></div><div class="border-t border-gray-800 pt-6 mt-6"><h3 class="text-xl font-bold mb-4">Комментарии (${m.comments?.length||0})</h3>${currentUser?`<form onsubmit="addComment('match',${m.id},this)" class="mb-6 flex gap-3"><input type="text" name="text" placeholder="Комментарий..." class="flex-1 bg-black border border-gray-700 rounded p-3 text-white focus:border-gkx-green outline-none" required><button type="submit" class="bg-gkx-green text-gkx-black px-6 py-3 rounded font-bold hover:bg-white transition">Отправить</button></form>`:'<p class="text-gray-500 mb-6"><button onclick="openModal(\'login\')" class="text-gkx-green hover:underline">Войдите</button>, чтобы комментировать</p>'}<div class="space-y-4">${m.comments?.length?m.comments.map((c,i)=>createCommentHTML(c,'match',m.id,i)).join(''):'<p class="text-gray-500 text-center py-8">Нет комментариев</p>'}</div></div>`;openModal('match');}
+        function openMatchModal(id){const m=matches.find(x=>x.id===id);if(!m)return;const league = leagues.find(l => l.id == m.leagueId); const date=m.date?new Date(m.date).toLocaleString('ru-RU',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';const c=document.getElementById('match-full-content');c.innerHTML=`<div class="text-center mb-8"><div class="text-gkx-green font-bold mb-2">${league?.name||m.league||'Лига'}</div><div class="text-2xl md:text-4xl font-black mb-2">${m.home} ${m.score||'-'} ${m.away}</div><div class="text-gray-400">${date}</div><div class="inline-block mt-2 px-4 py-1 rounded ${m.status==='Live'?'bg-red-500/20 text-red-500':'bg-gray-800 text-gray-400'}">${m.status}</div></div><div class="flex gap-2 border-b border-gray-800 mb-6 overflow-x-auto pb-1"><button class="match-tab-btn active" onclick="switchMatchTab('stats')">📊 Статистика</button><button class="match-tab-btn" onclick="switchMatchTab('info')">ℹ️ Информация</button><button class="match-tab-btn" onclick="switchMatchTab('events')">📋 События</button><button class="match-tab-btn" onclick="switchMatchTab('predictions')">🔮 Прогнозы</button></div><div id="tab-stats" class="match-tab-content active">${m.homePossession!=null?`<div class="bg-gray-900/50 rounded-xl p-6 mb-8"><h3 class="text-xl font-bold mb-4 text-center">Статистика</h3><div class="space-y-4"><div><div class="flex justify-between text-sm mb-1"><span class="font-bold">${m.homePossession}%</span><span class="text-gray-400">Владение</span><span class="font-bold">${m.awayPossession}%</span></div><div class="flex h-2 rounded-full overflow-hidden bg-gray-800"><div class="bg-gkx-green" style="width:${m.homePossession}%"></div><div class="bg-gray-600" style="width:${m.awayPossession}%"></div></div></div><div class="grid grid-cols-3 gap-4 text-center text-sm"><div><div class="text-gray-400 mb-1">Удары</div><div class="font-bold text-lg">${m.homeShots||0} - ${m.awayShots||0}</div></div><div><div class="text-gray-400 mb-1">Угловые</div><div class="font-bold text-lg">${m.homeCorners||0} - ${m.awayCorners||0}</div></div></div></div></div>`:''}<div class="grid md:grid-cols-2 gap-6 mb-8"><div class="bg-gray-900/50 rounded-xl p-6"><h3 class="text-lg font-bold mb-4 text-gkx-green text-center">${m.home}</h3><div class="space-y-2 text-sm">${(m.homeLineup||'Состав не указан').split(',').map(p=>`<div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-gkx-green/20 text-gkx-green flex items-center justify-center text-xs font-bold">11</span><span>${p.trim()}</span></div>`).join('')}</div></div><div class="bg-gray-900/50 rounded-xl p-6"><h3 class="text-lg font-bold mb-4 text-gkx-green text-center">${m.away}</h3><div class="space-y-2 text-sm">${(m.awayLineup||'Состав не указан').split(',').map(p=>`<div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-gkx-green/20 text-gkx-green flex items-center justify-center text-xs font-bold">11</span><span>${p.trim()}</span></div>`).join('')}</div></div></div></div><div id="tab-info" class="match-tab-content"><div class="space-y-4"><div class="match-info-card"><div class="match-info-label">🏟️ Стадион</div><div class="match-info-value"><span class="match-info-icon">📍</span>${m.stadium||'Не указан'}</div>${m.city?`<div class="match-info-value mt-2"><span class="match-info-icon">🏙️</span>${m.city}</div>`:''}</div><div class="grid grid-cols-2 gap-4"><div class="coach-card"><div class="coach-icon">👔</div><div class="coach-name">${m.homeCoach||'Не указан'}</div><div class="coach-team">${m.home}</div></div><div class="coach-card"><div class="coach-icon">👔</div><div class="coach-name">${m.awayCoach||'Не указан'}</div><div class="coach-team">${m.away}</div></div></div></div></div><div id="tab-events" class="match-tab-content"><div class="bg-gray-900/50 rounded-xl p-6">${renderEvents(m.events,m.home,m.away)}</div></div><div id="tab-predictions" class="match-tab-content"><div class="coming-soon"><div class="coming-soon-icon">🚧</div><div class="coming-soon-text">В РАЗРАБОТКЕ</div><div class="coming-soon-sub">Прогнозы на матчи скоро появятся!</div></div></div><div class="border-t border-gray-800 pt-6 mt-6"><h3 class="text-xl font-bold mb-4">Комментарии (${m.comments?.length||0})</h3>${currentUser?`<form onsubmit="addComment('match',${m.id},this)" class="mb-6 flex gap-3"><input type="text" name="text" placeholder="Комментарий..." class="flex-1 bg-black border border-gray-700 rounded p-3 text-white focus:border-gkx-green outline-none" required><button type="submit" class="bg-gkx-green text-gkx-black px-6 py-3 rounded font-bold hover:bg-white transition">Отправить</button></form>`:'<p class="text-gray-500 mb-6"><button onclick="openModal(\'login\')" class="text-gkx-green hover:underline">Войдите</button>, чтобы комментировать</p>'}<div class="space-y-4">${m.comments?.length?m.comments.map((c,i)=>createCommentHTML(c,'match',m.id,i)).join(''):'<p class="text-gray-500 text-center py-8">Нет комментариев</p>'}</div></div>`;openModal('match');}
 
         function openNewsModal(id){const n=news.find(x=>x.id===id);if(!n)return;document.getElementById('news-full-content').innerHTML=`<img src="${n.image}" class="w-full h-64 md:h-96 object-cover rounded-t-xl" alt="${n.title}"><div class="p-8"><h2 class="text-3xl md:text-4xl font-black mb-4 text-gkx-green">${n.title}</h2><div class="text-gray-400 text-sm mb-6">${n.date}</div><div class="prose prose-invert max-w-none text-gray-300 leading-relaxed mb-8">${n.content.replace(/\n/g,'<br>')}</div><div class="border-t border-gray-800 pt-6"><h3 class="text-xl font-bold mb-4">Комментарии (${n.comments?.length||0})</h3>${currentUser?`<form onsubmit="addComment('news',${n.id},this)" class="mb-6 flex gap-3"><input type="text" name="text" placeholder="Комментарий..." class="flex-1 bg-black border border-gray-700 rounded p-3 text-white focus:border-gkx-green outline-none" required><button type="submit" class="bg-gkx-green text-gkx-black px-6 py-3 rounded font-bold hover:bg-white transition">Отправить</button></form>`:'<p class="text-gray-500 mb-6"><button onclick="openModal(\'login\')" class="text-gkx-green hover:underline">Войдите</button>, чтобы комментировать</p>'}<div class="space-y-4">${n.comments?.length?n.comments.map((c,i)=>createCommentHTML(c,'news',n.id,i)).join(''):'<p class="text-gray-500 text-center py-8">Нет комментариев</p>'}</div></div></div>`;openModal('news');}
 
