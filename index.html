@@ -278,6 +278,7 @@
                 <button onclick="showAdminTab('standings')" class="admin-tab pb-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap">Таблица</button>
                 <button onclick="showAdminTab('news')" class="admin-tab pb-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap">Новости</button>
                 <button onclick="showAdminTab('socials')" class="admin-tab pb-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap">Соцсети</button>
+                <button onclick="showAdminTab('data')" class="admin-tab pb-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap">💾 Данные</button>
                 <button onclick="showAdminTab('comments')" class="admin-tab pb-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap">Комментарии</button>
                 <button onclick="showAdminTab('users')" class="admin-tab pb-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap">Пользователи</button>
             </div>
@@ -377,6 +378,46 @@
                 </div>
             </div>
 
+            <!-- НОВАЯ ВКЛАДКА ДАННЫЕ -->
+            <div id="admin-data" class="admin-tab-content hidden space-y-6">
+                <div class="bg-gkx-dark p-6 rounded-xl border border-gray-800">
+                    <h3 class="text-xl font-bold mb-4 text-gkx-green">💾 Управление данными</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <button onclick="exportData()" class="bg-gkx-green text-gkx-black font-bold py-4 px-6 rounded hover:bg-white transition flex items-center justify-center gap-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            Экспорт данных
+                        </button>
+                        <label class="bg-gray-700 text-white font-bold py-4 px-6 rounded hover:bg-gray-600 transition cursor-pointer text-center flex items-center justify-center gap-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Импорт данных
+                            <input type="file" id="import-file" accept=".json" class="hidden" onchange="importData(this)">
+                        </label>
+                    </div>
+                    <div class="bg-gray-900/50 rounded-lg p-4 mb-4">
+                        <h4 class="font-bold text-gkx-green mb-2">📋 Как использовать:</h4>
+                        <ol class="text-gray-300 text-sm space-y-2 list-decimal list-inside">
+                            <li><strong>Экспорт:</strong> Нажмите "Экспорт данных" для скачивания файла backup.json</li>
+                            <li><strong>Импорт:</strong> Выберите файл backup.json для восстановления данных</li>
+                            <li><strong>Перенос:</strong> Скачайте файл на одном устройстве, загрузите на другом</li>
+                        </ol>
+                    </div>
+                    <div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                        <h4 class="font-bold text-blue-400 mb-2">💡 Статистика данных:</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div><span class="text-gray-400">Лиги:</span> <span id="stat-leagues" class="text-gkx-green font-bold">0</span></div>
+                            <div><span class="text-gray-400">Матчи:</span> <span id="stat-matches" class="text-gkx-green font-bold">0</span></div>
+                            <div><span class="text-gray-400">Команды:</span> <span id="stat-standings" class="text-gkx-green font-bold">0</span></div>
+                            <div><span class="text-gray-400">Новости:</span> <span id="stat-news" class="text-gkx-green font-bold">0</span></div>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                        <p class="text-yellow-500 text-sm">
+                            ⚠️ <strong>Внимание:</strong> localStorage работает только в одном браузере. Для синхронизации между устройствами используйте экспорт/импорт.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div id="admin-comments" class="admin-tab-content hidden space-y-6"><div class="bg-gkx-dark p-6 rounded-xl border border-gray-800"><h3 class="text-xl font-bold mb-4 text-gkx-green">Все комментарии (<span id="comments-count">0</span>)</h3><div class="space-y-4" id="admin-comments-list"></div></div></div>
             <div id="admin-users" class="admin-tab-content hidden"><div class="bg-gkx-dark rounded-xl border border-gray-800 overflow-hidden"><div class="p-6 border-b border-gray-800 flex justify-between items-center"><h3 class="text-xl font-bold text-gkx-green">Пользователи (<span id="users-count">0</span>)</h3><div class="text-sm text-gray-400">Админов: <span id="admins-count" class="text-gkx-green">0</span></div></div><div class="overflow-x-auto"><table class="w-full"><thead class="bg-gray-900 text-gray-400 text-xs uppercase"><tr><th class="p-4 text-left">Пользователь</th><th class="p-4 text-left">Контакты</th><th class="p-4 text-left">Роль</th><th class="p-4 text-left">Дата</th><th class="p-4 text-right">Действия</th></tr></thead><tbody id="users-table-body" class="divide-y divide-gray-800"></tbody></table></div></div></div>
         </div>
@@ -428,7 +469,6 @@
         function calculatePoints(s) { return (s.won * 3) + (s.drawn * 1); }
         function calculateGD(s) { return s.gf - s.ga; }
 
-        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ВЫБРАННОЙ ЛИГИ ===
         function loadSelectedLeague() {
             const savedLeague = localStorage.getItem('gkx_selectedLeague');
             if (savedLeague && leagues.find(l => l.id == savedLeague)) {
@@ -439,12 +479,9 @@
         }
 
         function init() { 
-            // Сначала загружаем лиги и выбранную лигу
             loadSelectedLeague();
             renderLeagues();
             renderAdminLeagues();
-            
-            // Затем всё остальное
             renderAll(); 
             updateUserPanel(); 
             updateAdminNavLink(); 
@@ -453,6 +490,7 @@
             renderStandings(); 
             renderAdminStandings();
             populateLeagueSelects();
+            updateDataStats();
         }
 
         function saveData() {
@@ -464,12 +502,14 @@
             localStorage.setItem('gkx_users', JSON.stringify(users));
             localStorage.setItem('gkx_userLikes', JSON.stringify(userLikes));
             if (currentUser) localStorage.setItem('gkx_currentUser', JSON.stringify(currentUser));
+            if (selectedLeague) localStorage.setItem('gkx_selectedLeague', selectedLeague);
+            updateDataStats();
         }
 
         function showSection(id) {
             ['home','matches','news','socials','admin'].forEach(s => document.getElementById('section-'+s).classList.add('hidden'));
             document.getElementById('section-'+id).classList.remove('hidden'); window.scrollTo(0,0);
-            if (id === 'admin') { renderAdminLeagues(); renderAdminMatches(); renderAdminStandings(); renderAdminNews(); renderAdminSocials(); renderAdminComments(); renderUsersTable(); populateLeagueSelects(); }
+            if (id === 'admin') { renderAdminLeagues(); renderAdminMatches(); renderAdminStandings(); renderAdminNews(); renderAdminSocials(); renderAdminComments(); renderUsersTable(); populateLeagueSelects(); updateDataStats(); }
             if (id === 'matches') { renderLeagues(); renderDateFilters(); renderAllMatches(); renderStandings(); }
             if (id === 'socials') { renderSocialsPage(); }
         }
@@ -487,39 +527,32 @@
             event.target.classList.remove('border-transparent','text-gray-400'); event.target.classList.add('border-gkx-green','text-gkx-green');
             document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.add('hidden'));
             document.getElementById('admin-'+tab).classList.remove('hidden');
+            if (tab === 'data') updateDataStats();
         }
 
         function checkAdminAccess() { if (!currentUser) { alert('Войдите в аккаунт!'); openModal('login'); return; } const u = users.find(x=>x.id===currentUser.id); if (!u?.isAdmin) { alert('Только для админов!'); return; } showSection('admin'); }
         function updateAdminNavLink() { const l=document.getElementById('admin-nav-link'),lm=document.getElementById('admin-nav-link-mobile'); if(currentUser){const u=users.find(x=>x.id===currentUser.id);if(u?.isAdmin){l.classList.remove('hidden');lm?.classList.remove('hidden');}else{l.classList.add('hidden');lm?.classList.add('hidden');}}else{l.classList.add('hidden');lm?.classList.add('hidden');} }
 
-        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ renderLeagues() ===
         function renderLeagues() {
             const container = document.getElementById('league-filters');
             if (!leagues.length) {
                 container.innerHTML = '<p class="text-gray-500 text-sm">Нет доступных лиг. Администратор ещё не добавил лиги.</p>';
                 return;
             }
-            
-            // Если лига не выбрана или выбранной лиги больше не существует, выбираем первую
             if (!selectedLeague || !leagues.find(l => l.id == selectedLeague)) {
                 selectedLeague = leagues[0].id;
             }
-            
             let html = '';
             leagues.forEach(l => {
                 const isActive = selectedLeague == l.id;
                 html += `<button onclick="filterByLeague(${l.id})" class="league-filter-btn px-4 py-2 rounded-lg text-sm ${isActive?'active':'text-gray-300 bg-gray-800'}">${l.name}</button>`;
             });
             container.innerHTML = html;
-            
-            // Обновляем заголовок таблицы сразу после рендера лиг
             renderStandings();
         }
 
-        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ filterByLeague() ===
         function filterByLeague(leagueId) {
             selectedLeague = leagueId;
-            // Сохраняем выбранную лигу в localStorage
             localStorage.setItem('gkx_selectedLeague', leagueId);
             renderLeagues();
             renderAllMatches();
@@ -560,29 +593,21 @@
             });
         }
 
-        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ renderStandings() ===
         function renderStandings() {
             const tbody = document.getElementById('standings-body');
             const leagueName = document.getElementById('standings-league-name');
-            
-            // Если лиги не выбраны, показываем сообщение
             if (!leagues.length) {
                 leagueName.textContent = 'Нет доступных лиг';
                 tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-500"><div class="text-4xl mb-2">📊</div>Администратор ещё не добавил лиги. Создайте лигу в админ-панели.</td></tr>`;
                 return;
             }
-            
-            // Фильтруем команды по выбранной лиге
             let filteredStandings = standings.filter(s => s.leagueId == selectedLeague);
             const league = leagues.find(l => l.id == selectedLeague);
             leagueName.textContent = league ? `Турнирная таблица: ${league.name} ${league.country ? '(' + league.country + ')' : ''}` : 'Турнирная таблица';
-
             if (!filteredStandings.length) {
                 tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-gray-500"><div class="text-4xl mb-2">📊</div>В этой лиге пока нет команд. Администратор ещё не добавил команды в таблицу.</td></tr>`;
                 return;
             }
-            
-            // Сортировка: Очки → Разница мячей → Забитые мячи
             const sorted = [...filteredStandings].sort((a, b) => {
                 const pointsA = calculatePoints(a), pointsB = calculatePoints(b);
                 if (pointsB !== pointsA) return pointsB - pointsA;
@@ -590,18 +615,15 @@
                 if (gdB !== gdA) return gdB - gdA;
                 return b.gf - a.gf;
             });
-
             tbody.innerHTML = sorted.map((s, index) => {
                 const pos = index + 1;
                 const points = calculatePoints(s);
                 const gd = calculateGD(s);
                 let zoneClass = '';
                 let zoneIndicator = '';
-                
                 if (pos <= 4) { zoneClass = 'pos-ucl'; zoneIndicator = '<div class="zone-indicator zone-ucl"></div>'; }
                 else if (pos <= 6) { zoneClass = 'pos-uel'; zoneIndicator = '<div class="zone-indicator zone-uel"></div>'; }
                 else if (pos >= 18) { zoneClass = 'pos-relegation'; zoneIndicator = '<div class="zone-indicator zone-relegation"></div>'; }
-
                 return `<tr class="table-row ${zoneClass}">${zoneIndicator}
                     <td class="pos-cell pos-${pos <= 4 ? pos : pos >= 18 ? 'relegation' : ''}">${pos}</td>
                     <td class="team-cell">${s.team}</td>
@@ -617,16 +639,13 @@
             }).join('');
         }
 
-        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ renderAdminStandings() ===
         function renderAdminStandings() {
             const tbody = document.getElementById('admin-standings-body');
             if (!standings.length) {
                 tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-gray-500"><div class="text-4xl mb-2">📊</div>Нет команд в таблице</td></tr>`;
                 return;
             }
-
             const sorted = [...standings].sort((a, b) => calculatePoints(b) - calculatePoints(a));
-
             tbody.innerHTML = sorted.map((s, index) => {
                 const league = leagues.find(l => l.id == s.leagueId);
                 return `
@@ -647,7 +666,6 @@
             `}).join('');
         }
 
-        // === ОСТАЛЬНОЙ КОД ===
         function renderDateFilters() {
             const c=document.getElementById('date-filters'), dates=[...new Set(matches.map(m=>m.date?.split('T')[0]))].filter(Boolean).sort();
             let h=`<button onclick="filterByDate(null)" class="date-filter-btn px-4 py-2 rounded-lg text-sm ${!selectedDate?'active':'text-gray-300 bg-gray-800'}">📅 Все даты</button>`;
@@ -783,7 +801,7 @@
             }
         });
 
-        document.getElementById('add-match-form').addEventListener('submit',e=>{e.preventDefault();const leagueId = document.getElementById('m-league-select').value; if(!leagueId){alert('Выберите лигу!');return;} const events=[];document.querySelectorAll('#events-container > div').forEach(div=>{const type=div.querySelector('.event-type').value,min=div.querySelector('.event-minute').value,player=div.querySelector('.event-player').value,team=div.querySelector('.event-team').value,extra=div.querySelector('.event-extra').value;if(min&&player)events.push({type,minute:parseInt(min),player,team,extra});});const m={id:Date.now(),leagueId,league:'',date:document.getElementById('m-date').value,home:document.getElementById('m-home').value,away:document.getElementById('m-away').value,score:document.getElementById('m-score').value||'-',status:document.getElementById('m-status').value,stadium:document.getElementById('m-stadium').value||'',city:document.getElementById('m-city').value||'',homeCoach:document.getElementById('m-home-coach').value||'',awayCoach:document.getElementById('m-away-coach').value||'',homeLineup:document.getElementById('m-home-lineup').value,awayLineup:document.getElementById('m-away-lineup').value,homePossession:document.getElementById('m-home-possession').value||null,awayPossession:document.getElementById('m-away-possession').value||null,homeShots:document.getElementById('m-home-shots').value||null,awayShots:document.getElementById('m-away-shots').value||null,homeCorners:document.getElementById('m-home-corners').value||null,awayCorners:document.getElementById('m-away-possession').value||null,events,comments:[]};matches.unshift(m);saveData();renderAdminMatches();renderAll();e.target.reset();document.getElementById('events-container').innerHTML='';alert('Матч добавлен!');});
+        document.getElementById('add-match-form').addEventListener('submit',e=>{e.preventDefault();const leagueId = document.getElementById('m-league-select').value; if(!leagueId){alert('Выберите лигу!');return;} const events=[];document.querySelectorAll('#events-container > div').forEach(div=>{const type=div.querySelector('.event-type').value,min=div.querySelector('.event-minute').value,player=div.querySelector('.event-player').value,team=div.querySelector('.event-team').value,extra=div.querySelector('.event-extra').value;if(min&&player)events.push({type,minute:parseInt(min),player,team,extra});});const m={id:Date.now(),leagueId,league:'',date:document.getElementById('m-date').value,home:document.getElementById('m-home').value,away:document.getElementById('m-away').value,score:document.getElementById('m-score').value||'-',status:document.getElementById('m-status').value,stadium:document.getElementById('m-stadium').value||'',city:document.getElementById('m-city').value||'',homeCoach:document.getElementById('m-home-coach').value||'',awayCoach:document.getElementById('m-away-coach').value||'',homeLineup:document.getElementById('m-home-lineup').value,awayLineup:document.getElementById('m-away-lineup').value,homePossession:document.getElementById('m-home-possession').value||null,awayPossession:document.getElementById('m-away-possession').value||null,homeShots:document.getElementById('m-home-shots').value||null,awayShots:document.getElementById('m-away-shots').value||null,homeCorners:document.getElementById('m-home-corners').value||null,awayCorners:document.getElementById('m-away-corners').value||null,events,comments:[]};matches.unshift(m);saveData();renderAdminMatches();renderAll();e.target.reset();document.getElementById('events-container').innerHTML='';alert('Матч добавлен!');});
         function openEditMatchModal(id){const m=matches.find(x=>x.id===id);if(!m)return;populateLeagueSelects();document.getElementById('edit-m-id').value=m.id;document.getElementById('edit-m-league-select').value=m.leagueId||'';document.getElementById('edit-m-league').value=m.league||'';document.getElementById('edit-m-date').value=m.date;document.getElementById('edit-m-home').value=m.home;document.getElementById('edit-m-away').value=m.away;document.getElementById('edit-m-score').value=m.score;document.getElementById('edit-m-status').value=m.status;document.getElementById('edit-m-stadium').value=m.stadium||'';document.getElementById('edit-m-city').value=m.city||'';document.getElementById('edit-m-home-coach').value=m.homeCoach||'';document.getElementById('edit-m-away-coach').value=m.awayCoach||'';document.getElementById('edit-m-home-lineup').value=m.homeLineup||'';document.getElementById('edit-m-away-lineup').value=m.awayLineup||'';document.getElementById('edit-m-home-possession').value=m.homePossession||'';document.getElementById('edit-m-away-possession').value=m.awayPossession||'';document.getElementById('edit-m-home-shots').value=m.homeShots||'';document.getElementById('edit-m-away-shots').value=m.awayShots||'';document.getElementById('edit-m-home-corners').value=m.homeCorners||'';const ec=document.getElementById('edit-events-container');ec.innerHTML='';(m.events||[]).forEach(ev=>{const id=`edit-event-${eventCounter++}`;ec.innerHTML+=`<div id="${id}" class="event-form"><div class="grid grid-cols-2 gap-2 mb-2"><select class="event-type bg-black border border-gray-700 rounded p-2 text-white text-sm"><option value="goal" ${ev.type==='goal'?'selected':''}>⚽ Гол</option><option value="yellow" ${ev.type==='yellow'?'selected':''}>🟨 Жёлтая</option><option value="red" ${ev.type==='red'?'selected':''}>🟥 Красная</option><option value="sub" ${ev.type==='sub'?'selected':''}>🔄 Замена</option><option value="penalty" ${ev.type==='penalty'?'selected':''}>🎯 Пенальти</option></select><input type="number" class="event-minute bg-black border border-gray-700 rounded p-2 text-white text-sm" placeholder="Минута" min="1" max="120" value="${ev.minute||''}"></div><input type="text" class="event-player bg-black border border-gray-700 rounded p-2 text-white text-sm" placeholder="Игрок" value="${ev.player||''}"><input type="text" class="event-team bg-black border border-gray-700 rounded p-2 text-white text-sm mt-2" placeholder="Команда" value="${ev.team||''}"><input type="text" class="event-extra bg-black border border-gray-700 rounded p-2 text-white text-sm mt-2" placeholder="Доп. информация" value="${ev.extra||''}"><button type="button" onclick="document.getElementById('${id}').remove()" class="mt-2 text-red-500 text-xs hover:text-red-400">✕ Удалить</button></div>`;});openModal('edit-match');}
         document.getElementById('edit-match-form').addEventListener('submit',e=>{e.preventDefault();const id=parseInt(document.getElementById('edit-m-id').value),m=matches.find(x=>x.id===id);if(m){const leagueId = document.getElementById('edit-m-league-select').value; if(leagueId)m.leagueId=leagueId;m.league=document.getElementById('edit-m-league').value;m.date=document.getElementById('edit-m-date').value;m.home=document.getElementById('edit-m-home').value;m.away=document.getElementById('edit-m-away').value;m.score=document.getElementById('edit-m-score').value;m.status=document.getElementById('edit-m-status').value;m.stadium=document.getElementById('edit-m-stadium').value||'';m.city=document.getElementById('edit-m-city').value||'';m.homeCoach=document.getElementById('edit-m-home-coach').value||'';m.awayCoach=document.getElementById('edit-m-away-coach').value||'';m.homeLineup=document.getElementById('edit-m-home-lineup').value;m.awayLineup=document.getElementById('edit-m-away-lineup').value;m.homePossession=document.getElementById('edit-m-home-possession').value||null;m.awayPossession=document.getElementById('edit-m-away-possession').value||null;m.homeShots=document.getElementById('edit-m-home-shots').value||null;m.awayShots=document.getElementById('edit-m-away-shots').value||null;m.homeCorners=document.getElementById('edit-m-home-corners').value||null;const events=[];document.querySelectorAll('#edit-events-container > div').forEach(div=>{const type=div.querySelector('.event-type').value,min=div.querySelector('.event-minute').value,player=div.querySelector('.event-player').value,team=div.querySelector('.event-team').value,extra=div.querySelector('.event-extra').value;if(min&&player)events.push({type,minute:parseInt(min),player,team,extra});});m.events=events;saveData();renderAdminMatches();renderAll();closeModal('edit-match');alert('Матч обновлён!');}});
 
@@ -857,6 +875,76 @@
         document.getElementById('edit-comment-form').addEventListener('submit',e=>{e.preventDefault();const ci=parseInt(document.getElementById('edit-c-id').value),type=document.getElementById('edit-c-type').value,itemId=parseInt(document.getElementById('edit-c-item-id').value),text=document.getElementById('edit-c-text').value;const col=type==='news'?news:matches;const item=col.find(x=>x.id===itemId);if(item?.comments?.[ci]){item.comments[ci].text=text;item.comments[ci].edited=true;saveData();renderAdminComments();renderAll();closeModal('edit-comment');alert('Комментарий обновлён!');}});
 
         function toggleAdminRole(userId){const u=users.find(x=>x.id===userId);if(u){u.isAdmin=!u.isAdmin;saveData();renderUsersTable();}}
+
+        // === ЭКСПОРТ ДАННЫХ ===
+        function exportData() {
+            const data = {
+                leagues: leagues,
+                matches: matches,
+                standings: standings,
+                news: news,
+                socials: socials,
+                users: users,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gkx-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('✅ Данные экспортированы! Сохраните файл в надёжном месте (Google Drive, облако и т.д.)');
+        }
+
+        // === ИМПОРТ ДАННЫХ ===
+        function importData(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (!data.leagues || !data.matches) {
+                        throw new Error('Неверный формат файла');
+                    }
+                    
+                    if (confirm('⚠️ Это заменит все текущие данные. Продолжить?\n\nРекомендуется сделать экспорт текущих данных перед импортом.')) {
+                        leagues = data.leagues || [];
+                        matches = data.matches || [];
+                        standings = data.standings || [];
+                        news = data.news || [];
+                        socials = data.socials || [];
+                        users = data.users || [];
+                        
+                        saveData();
+                        
+                        setTimeout(() => {
+                            alert('✅ Данные успешно импортированы!');
+                            location.reload();
+                        }, 100);
+                    }
+                } catch (error) {
+                    alert('❌ Ошибка импорта: файл повреждён или несовместим\n\n' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            input.value = '';
+        }
+
+        // === ОБНОВЛЕНИЕ СТАТИСТИКИ ДАННЫХ ===
+        function updateDataStats() {
+            document.getElementById('stat-leagues').textContent = leagues.length;
+            document.getElementById('stat-matches').textContent = matches.length;
+            document.getElementById('stat-standings').textContent = standings.length;
+            document.getElementById('stat-news').textContent = news.length;
+        }
 
         init();
     </script>
